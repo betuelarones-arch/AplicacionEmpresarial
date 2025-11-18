@@ -1,4 +1,15 @@
 
 venv/
 .env/
+/env/
 Backend/venv/
+# Entorno virtual
+venv/
+__pycache__/
+
+# Archivos de Python
+*.pyc
+*.pyo
+
+# Configuración sensible
+.env
