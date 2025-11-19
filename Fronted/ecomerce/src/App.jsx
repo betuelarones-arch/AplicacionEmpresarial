@@ -1,35 +1,68 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.jsx
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { useState } from "react";
+
+import DashboardProductos from "./pages/DashboardProductos";
+import CrearProductosYCategorias from "./pages/CrearProductosYCategorias";
+import Carrito from "./pages/Carrito";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [cartItems, setCartItems] = useState([]);
+
+  const handleAddToCart = (producto) => {
+    setCartItems((prev) => [...prev, producto]);
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <BrowserRouter>
+      {/* NAVBAR */}
+      <nav
+        style={{
+          display: "flex",
+          gap: "1rem",
+          padding: "1rem 2rem",
+          borderBottom: "1px solid #333",
+          alignItems: "center",
+        }}
+      >
+        <Link to="/dashboard">Dashboard</Link>
+        <Link to="/admin">Crear productos/categorías</Link>
+
+        <div style={{ flex: 1 }} />
+
+        {/* Carrito como link */}
+        <Link
+          to="/carrito"
+          style={{
+            padding: "0.45rem 0.9rem",
+            borderRadius: "999px",
+            background: "#222",
+            fontSize: "0.9rem",
+          }}
+        >
+          🛒 Carrito ({cartItems.length})
+        </Link>
+      </nav>
+
+      {/* RUTAS */}
+      <Routes>
+        <Route
+          path="/dashboard"
+          element={<DashboardProductos onAddToCart={handleAddToCart} />}
+        />
+        <Route path="/admin" element={<CrearProductosYCategorias />} />
+        <Route
+          path="/carrito"
+          element={<Carrito cartItems={cartItems} />}
+        />
+        {/* ruta por defecto que lleve al dashboard */}
+        <Route
+          path="/"
+          element={<DashboardProductos onAddToCart={handleAddToCart} />}
+        />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
