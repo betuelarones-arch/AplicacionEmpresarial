@@ -1,4 +1,15 @@
+# Archivos de configuración sensibles
+.env
 
+# Base de datos local
+*.sqlite3
+db.sqlite3
+
+# Entornos virtuales
 venv/
-.env/
-Backend/venv/
+/env/
+
+# Archivos de caché y compilados de Python
+__pycache__/
+*.pyc
+*.pyo
