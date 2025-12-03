@@ -84,3 +84,4 @@ media/
 .idea/
 *.swp
 *.swo
+.claude/
