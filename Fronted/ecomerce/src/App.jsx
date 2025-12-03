@@ -8,6 +8,10 @@ import Navbar from './components/shop/Navbar';
 import ShopPage from './pages/shop/ShopPage';
 import ProductDetailPage from './pages/shop/ProductDetailPage';
 import CartPage from './pages/shop/CartPage';
+import CheckoutPage from './pages/shop/CheckoutPage';
+import OrderSuccessPage from './pages/shop/OrderSuccessPage';
+import MyOrdersPage from './pages/shop/MyOrdersPage';
+import MyAccountPage from './pages/shop/MyAccountPage';
 
 // Páginas de Autenticación
 import LoginPage from './pages/auth/LoginPage';
@@ -19,6 +23,8 @@ import AdminProductos from './pages/admin/AdminProductos';
 import ProductoForm from './pages/admin/ProductoForm';
 import AdminCategorias from './pages/admin/AdminCategorias';
 import CategoriaForm from './pages/admin/CategoriaForm';
+import AdminLoginPage from './pages/admin/AdminLoginPage';  
+
 
 // Componente para proteger rutas de admin
 const ProtectedRoute = ({ children }) => {
@@ -35,7 +41,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/login" replace />; // 👈 antes era /login
   }
 
   if (!isAdmin()) {
@@ -55,8 +61,16 @@ function AppContent() {
         <Route path="/" element={<ShopPage />} />
         <Route path="/producto/:id" element={<ProductDetailPage />} />
         <Route path="/carrito" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
+        <Route path="/mis-pedidos" element={<MyOrdersPage />} />
+        <Route path="/mi-cuenta" element={<MyAccountPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/registro" element={<RegisterPage />} />
+
+        {/* Login ADMIN (público) 👇 */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+
 
         {/* Rutas de Admin (Protegidas) */}
         <Route 

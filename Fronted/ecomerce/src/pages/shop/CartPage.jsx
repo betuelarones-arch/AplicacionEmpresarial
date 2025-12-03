@@ -1,155 +1,196 @@
 // src/pages/shop/CartPage.jsx
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 
 const CartPage = () => {
-  const { cart, removeFromCart, updateQuantity, getTotal, clearCart } = useCart();
+  const { items, removeFromCart, updateQuantity, getTotal, getTotalItems } = useCart();
+  const { isAuthenticated } = useAuth();
 
-  if (cart.length === 0) {
+  const handleQuantityChange = (productId, newQuantity, maxStock) => {
+    if (newQuantity < 1) return;
+    if (newQuantity > maxStock) {
+      alert(`Solo hay ${maxStock} unidades disponibles`);
+      return;
+    }
+    updateQuantity(productId, newQuantity);
+  };
+
+  if (items.length === 0) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
-        <div className="text-center">
-          <div style={{ fontSize: '5rem' }}>🛒</div>
-          <h2 className="fw-bold mb-3">Tu carrito está vacío</h2>
+      <div className="container py-5">
+        <div className="text-center py-5">
+          <i className="bi bi-cart-x" style={{ fontSize: '5rem', color: '#dee2e6' }}></i>
+          <h3 className="mt-4 mb-3">Tu carrito está vacío</h3>
           <p className="text-muted mb-4">¡Agrega algunos productos deliciosos!</p>
-          <Link to="/" className="btn btn-danger btn-lg">
-            Ir a la tienda
+          <Link to="/" className="btn btn-danger">
+            <i className="bi bi-shop me-2"></i>
+            Ir a la Tienda
           </Link>
         </div>
       </div>
     );
   }
 
+  const total = getTotal();
+
   return (
-    <div className="bg-light min-vh-100">
-      <div className="container py-4">
-        <h1 className="fw-bold mb-4">Carrito de Compras</h1>
+    <div className="container py-5">
+      {/* Breadcrumb */}
+      <nav aria-label="breadcrumb" className="mb-4">
+        <ol className="breadcrumb">
+          <li className="breadcrumb-item">
+            <Link to="/">Inicio</Link>
+          </li>
+          <li className="breadcrumb-item active">Carrito</li>
+        </ol>
+      </nav>
 
-        <div className="row">
-          {/* Lista de productos */}
-          <div className="col-lg-8 mb-4">
-            <div className="card shadow-sm">
-              <div className="card-body p-0">
-                {cart.map((item, index) => (
-                  <div key={item.id} className={`p-3 ${index !== cart.length - 1 ? 'border-bottom' : ''}`}>
-                    <div className="row align-items-center">
-                      {/* Imagen */}
-                      <div className="col-md-2 col-3">
-                        {item.imagen ? (
-                          <img
-                            src={item.imagen}
-                            alt={item.nombre}
-                            className="img-fluid rounded"
-                          />
-                        ) : (
-                          <div className="bg-light rounded text-center p-3">
-                            <span style={{ fontSize: '2rem' }}>🍰</span>
-                          </div>
-                        )}
-                      </div>
+      <h2 className="mb-4">
+        <i className="bi bi-cart3 text-danger me-2"></i>
+        Mi Carrito ({getTotalItems()} {getTotalItems() === 1 ? 'producto' : 'productos'})
+      </h2>
 
-                      {/* Info */}
-                      <div className="col-md-4 col-9">
-                        <Link
-                          to={`/producto/${item.id}`}
-                          className="text-decoration-none text-dark"
+      <div className="row">
+        {/* Lista de productos */}
+        <div className="col-lg-8">
+          <div className="card mb-4">
+            <div className="card-body">
+              {items.map((item, index) => (
+                <div key={item.id}>
+                  <div className="row align-items-center py-3">
+                    {/* Imagen */}
+                    <div className="col-md-2 col-3">
+                      {item.imagen ? (
+                        <img
+                          src={item.imagen}
+                          alt={item.nombre}
+                          className="img-fluid rounded"
+                          style={{ maxHeight: '80px', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div 
+                          className="bg-light rounded d-flex align-items-center justify-content-center"
+                          style={{ height: '80px' }}
                         >
-                          <h6 className="mb-1 fw-semibold">{item.nombre}</h6>
-                        </Link>
-                        <small className="text-muted">
-                          ${parseFloat(item.precio).toFixed(2)} c/u
-                        </small>
-                      </div>
-
-                      {/* Cantidad */}
-                      <div className="col-md-3 col-6 mt-2 mt-md-0">
-                        <div className="input-group input-group-sm">
-                          <button
-                            className="btn btn-outline-secondary"
-                            onClick={() => updateQuantity(item.id, item.cantidad - 1)}
-                          >
-                            -
-                          </button>
-                          <input
-                            type="text"
-                            className="form-control text-center"
-                            value={item.cantidad}
-                            readOnly
-                          />
-                          <button
-                            className="btn btn-outline-secondary"
-                            onClick={() => updateQuantity(item.id, item.cantidad + 1)}
-                          >
-                            +
-                          </button>
+                          🍰
                         </div>
-                      </div>
+                      )}
+                    </div>
 
-                      {/* Subtotal */}
-                      <div className="col-md-2 col-4 mt-2 mt-md-0 text-end">
-                        <h6 className="mb-0 fw-bold">
-                          ${(parseFloat(item.precio) * item.cantidad).toFixed(2)}
-                        </h6>
-                      </div>
+                    {/* Información del producto */}
+                    <div className="col-md-4 col-9">
+                      <h6 className="mb-1">{item.nombre}</h6>
+                      <p className="text-muted small mb-0">
+                        ${parseFloat(item.precio).toFixed(2)} c/u
+                      </p>
+                    </div>
 
-                      {/* Eliminar */}
-                      <div className="col-md-1 col-2 mt-2 mt-md-0 text-end">
+                    {/* Cantidad */}
+                    <div className="col-md-3 col-6 mt-3 mt-md-0">
+                      <div className="input-group">
                         <button
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() => removeFromCart(item.id)}
-                          title="Eliminar"
+                          className="btn btn-outline-secondary"
+                          onClick={() => handleQuantityChange(item.id, item.cantidad - 1, item.stock)}
                         >
-                          <i className="bi bi-trash"></i>
+                          <i className="bi bi-dash"></i>
+                        </button>
+                        <input
+                          type="number"
+                          className="form-control text-center"
+                          value={item.cantidad}
+                          onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1, item.stock)}
+                          min="1"
+                          max={item.stock}
+                        />
+                        <button
+                          className="btn btn-outline-secondary"
+                          onClick={() => handleQuantityChange(item.id, item.cantidad + 1, item.stock)}
+                        >
+                          <i className="bi bi-plus"></i>
                         </button>
                       </div>
+                      <small className="text-muted">Stock: {item.stock}</small>
+                    </div>
+
+                    {/* Subtotal y eliminar */}
+                    <div className="col-md-3 col-6 mt-3 mt-md-0 text-end">
+                      <p className="fw-bold mb-2">
+                        ${(parseFloat(item.precio) * item.cantidad).toFixed(2)}
+                      </p>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => removeFromCart(item.id)}
+                      >
+                        <i className="bi bi-trash"></i> Eliminar
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                  {index < items.length - 1 && <hr />}
+                </div>
+              ))}
             </div>
-
-            <button
-              onClick={() => {
-                if (window.confirm('¿Estás seguro de vaciar el carrito?')) {
-                  clearCart();
-                }
-              }}
-              className="btn btn-link text-danger mt-2"
-            >
-              Vaciar carrito
-            </button>
           </div>
 
-          {/* Resumen */}
-          <div className="col-lg-4">
-            <div className="card shadow-sm sticky-top" style={{ top: '20px' }}>
-              <div className="card-body">
-                <h5 className="card-title fw-bold mb-4">Resumen de compra</h5>
+          {/* Botón volver a comprar */}
+          <Link to="/" className="btn btn-outline-secondary">
+            <i className="bi bi-arrow-left me-2"></i>
+            Seguir Comprando
+          </Link>
+        </div>
 
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Subtotal</span>
-                    <span>${getTotal().toFixed(2)}</span>
-                  </div>
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Envío</span>
-                    <span>Por calcular</span>
-                  </div>
-                  <hr />
-                  <div className="d-flex justify-content-between">
-                    <strong>Total</strong>
-                    <strong className="text-danger fs-5">${getTotal().toFixed(2)}</strong>
-                  </div>
+        {/* Resumen del pedido */}
+        <div className="col-lg-4">
+          <div className="card sticky-top" style={{ top: '20px' }}>
+            <div className="card-body">
+              <h5 className="card-title mb-4">
+                <i className="bi bi-receipt text-danger me-2"></i>
+                Resumen del Pedido
+              </h5>
+
+              <div className="d-flex justify-content-between mb-3">
+                <span>Subtotal:</span>
+                <strong>${total.toFixed(2)}</strong>
+              </div>
+
+              <div className="d-flex justify-content-between mb-3">
+                <span>Envío:</span>
+                <strong className="text-success">GRATIS</strong>
+              </div>
+
+              <hr />
+
+              <div className="d-flex justify-content-between mb-4">
+                <h5>Total:</h5>
+                <h5 className="text-danger">${total.toFixed(2)}</h5>
+              </div>
+
+              {/* Botón de checkout */}
+              {isAuthenticated ? (
+                <Link to="/checkout" className="btn btn-danger w-100 py-3 fw-semibold mb-2">
+                  <i className="bi bi-lock-fill me-2"></i>
+                  Proceder al Pago
+                </Link>
+              ) : (
+                <Link to="/login" className="btn btn-danger w-100 py-3 fw-semibold mb-2">
+                  <i className="bi bi-box-arrow-in-right me-2"></i>
+                  Inicia Sesión para Comprar
+                </Link>
+              )}
+
+              {/* Badges de beneficios */}
+              <div className="mt-3">
+                <div className="d-flex align-items-center mb-2">
+                  <i className="bi bi-truck text-success me-2"></i>
+                  <small>Envío gratis en todos los pedidos</small>
                 </div>
-
-                <div className="d-grid gap-2">
-                  <button className="btn btn-danger btn-lg">
-                    Proceder al pago
-                  </button>
-                  
-                  <Link to="/" className="btn btn-outline-danger">
-                    Seguir comprando
-                  </Link>
+                <div className="d-flex align-items-center mb-2">
+                  <i className="bi bi-shield-check text-primary me-2"></i>
+                  <small>Pago seguro con Stripe</small>
+                </div>
+                <div className="d-flex align-items-center">
+                  <i className="bi bi-arrow-counterclockwise text-info me-2"></i>
+                  <small>Devoluciones fáciles</small>
                 </div>
               </div>
             </div>

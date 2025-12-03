@@ -7,4 +7,4 @@ Pillow==11.0.0
 openai==1.57.2
 numpy==2.2.0
 scikit-learn==1.6.0
-Pillow
+stripe==11.2.0

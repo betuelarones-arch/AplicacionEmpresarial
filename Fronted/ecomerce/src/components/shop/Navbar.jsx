@@ -15,7 +15,7 @@ const Navbar = () => {
       if (isAdmin()) {
         navigate('/admin');
       } else {
-        navigate('/cuenta');
+        navigate('/mi-cuenta'); // ✅ CORREGIDO
       }
     } else {
       navigate('/login');

@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/auth/', include('authentication.urls')),  # Endpoints de autenticación
     path('api/', include('categorias.urls')),
     path('api/', include('productos.urls')),
+    path('api/', include('orders.urls')),  # Endpoints de órdenes
 ]
 
 if settings.DEBUG:

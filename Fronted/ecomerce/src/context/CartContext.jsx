@@ -1,5 +1,6 @@
 // src/context/CartContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
@@ -12,81 +13,123 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState(() => {
-    // Cargar carrito desde localStorage al inicio
-    const savedCart = localStorage.getItem('cart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const { user } = useAuth();
+  const [items, setItems] = useState([]);
+
+  // Obtener clave de localStorage específica por usuario
+  const getCartKey = () => {
+    return user?.id ? `cartItems_${user.id}` : 'cartItems_guest';
+  };
+
+  // Cargar carrito del localStorage al iniciar
+  useEffect(() => {
+    const cartKey = getCartKey();
+    const savedCart = localStorage.getItem(cartKey);
+    if (savedCart) {
+      try {
+        setItems(JSON.parse(savedCart));
+      } catch (error) {
+        console.error('Error al cargar carrito:', error);
+        setItems([]);
+      }
+    } else {
+      setItems([]);
+    }
+  }, [user]); // Recargar cuando cambie el usuario
 
   // Guardar carrito en localStorage cada vez que cambie
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
+    if (items.length > 0) {
+      const cartKey = getCartKey();
+      localStorage.setItem(cartKey, JSON.stringify(items));
+    }
+  }, [items, user]);
 
-  // Agregar producto al carrito
-  const addToCart = (producto, cantidad = 1) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === producto.id);
+  const addToCart = (product, cantidad = 1) => {
+    setItems(currentItems => {
+      const existingItem = currentItems.find(item => item.id === product.id);
       
       if (existingItem) {
         // Si ya existe, aumentar cantidad
-        return prevCart.map(item =>
-          item.id === producto.id
+        return currentItems.map(item =>
+          item.id === product.id
             ? { ...item, cantidad: item.cantidad + cantidad }
             : item
         );
       } else {
         // Si no existe, agregarlo
-        return [...prevCart, { ...producto, cantidad }];
+        return [...currentItems, { 
+          ...product, 
+          cantidad,
+          precio: parseFloat(product.precio) || 0
+        }];
       }
     });
   };
 
-  // Eliminar producto del carrito
-  const removeFromCart = (productoId) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productoId));
+  const removeFromCart = (productId) => {
+    setItems(currentItems => {
+      const newItems = currentItems.filter(item => item.id !== productId);
+      const cartKey = getCartKey();
+      if (newItems.length === 0) {
+        localStorage.removeItem(cartKey);
+      } else {
+        localStorage.setItem(cartKey, JSON.stringify(newItems));
+      }
+      return newItems;
+    });
   };
 
-  // Actualizar cantidad de un producto
-  const updateQuantity = (productoId, cantidad) => {
-    if (cantidad <= 0) {
-      removeFromCart(productoId);
+  const updateQuantity = (productId, newQuantity) => {
+    if (newQuantity <= 0) {
+      removeFromCart(productId);
       return;
     }
-    
-    setCart(prevCart =>
-      prevCart.map(item =>
-        item.id === productoId ? { ...item, cantidad } : item
+
+    setItems(currentItems =>
+      currentItems.map(item =>
+        item.id === productId
+          ? { ...item, cantidad: newQuantity }
+          : item
       )
     );
   };
 
-  // Vaciar carrito
   const clearCart = () => {
-    setCart([]);
+    const cartKey = getCartKey();
+    localStorage.removeItem(cartKey);
+    setItems([]);
   };
 
-  // Calcular total
   const getTotal = () => {
-    return cart.reduce((total, item) => {
-      return total + (parseFloat(item.precio) * item.cantidad);
+    return items.reduce((total, item) => {
+      const precio = parseFloat(item.precio) || 0;
+      return total + (precio * item.cantidad);
     }, 0);
   };
 
-  // Calcular cantidad total de items
   const getTotalItems = () => {
-    return cart.reduce((total, item) => total + item.cantidad, 0);
+    return items.reduce((total, item) => total + item.cantidad, 0);
+  };
+
+  const isInCart = (productId) => {
+    return items.some(item => item.id === productId);
   };
 
   const value = {
-    cart,
+    items,
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
     getTotal,
-    getTotalItems
+    getTotalItems,
+    isInCart
   };
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-};
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+    </CartContext.Provider>
+  );
+};  

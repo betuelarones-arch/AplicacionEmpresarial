@@ -1,114 +1,163 @@
 // src/api/auth.js
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+import API_BASE_URL from './config';
 
-export const authAPI = {
-  // POST /api/auth/register - Registrar nuevo cliente
+const authAPI = {
+  // 🔹 Registrar nuevo usuario CLIENTE
   register: async (userData) => {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
     });
-    
+
     const data = await response.json();
-    
+
     if (!response.ok) {
-      // Extraer mensajes de error del backend
-      const errorMessage = data.message || 'Error al registrar usuario';
+      throw new Error(data.message || data.error || 'Error al registrar usuario');
+    }
+
+    // Guardar token si el registro es exitoso
+    if (data.success && data.data && data.data.token) {
+      localStorage.setItem('authToken', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+    }
+
+    return data;
+  },
+
+  // 🔹 LOGIN CLIENTE → usa /api/auth/client/login
+  loginClient: async (emailOrUsername, password) => {
+    // Detectamos si escribió email o username
+    const body = emailOrUsername.includes('@')
+      ? { email: emailOrUsername, password }
+      : { username: emailOrUsername, password };
+
+    const response = await fetch(`${API_BASE_URL}/auth/client/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      let errorMessage = 'Error al iniciar sesión';
+      if (data.message) errorMessage = data.message;
+      else if (data.error) errorMessage = data.error;
+      else if (data.detail) errorMessage = data.detail;
       throw new Error(errorMessage);
     }
-    
-    // Guardar token y datos del usuario automáticamente
-    if (data.success && data.data.token) {
+
+    if (data.success && data.data && data.data.token) {
       localStorage.setItem('authToken', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
     }
-    
+
     return data;
   },
 
-  // POST /api/auth/login - Iniciar sesión
-  login: async (username, password) => {
+  // 🔹 LOGIN ADMIN → usa /api/auth/login
+  loginAdmin: async (emailOrUsername, password) => {
+    const body = emailOrUsername.includes('@')
+      ? { email: emailOrUsername, password }
+      : { username: emailOrUsername, password };
+
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al iniciar sesión');
-    }
-    
+
     const data = await response.json();
-    
-    // Guardar token y datos del usuario
-    if (data.success && data.data.token) {
+
+    if (!response.ok) {
+      let errorMessage = 'Error al iniciar sesión';
+      if (data.message) errorMessage = data.message;
+      else if (data.error) errorMessage = data.error;
+      else if (data.detail) errorMessage = data.detail;
+      throw new Error(errorMessage);
+    }
+
+    if (data.success && data.data && data.data.token) {
       localStorage.setItem('authToken', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
     }
-    
+
     return data;
   },
 
-  // POST /api/auth/logout - Cerrar sesión
+  // 🔹 Logout
   logout: async () => {
     const token = localStorage.getItem('authToken');
-    
+
     if (token) {
       try {
         await fetch(`${API_BASE_URL}/auth/logout`, {
           method: 'POST',
           headers: {
-            'Authorization': `Token ${token}`
-          }
+            'Authorization': `Token ${token}`,
+          },
         });
       } catch (error) {
-        console.error('Error al cerrar sesión:', error);
+        console.error('Error al hacer logout:', error);
       }
     }
-    
-    // Limpiar datos locales
+
+    // Limpiar localStorage siempre
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
   },
 
-  // GET /api/auth/user - Obtener datos del usuario actual
+  // 🔹 Obtener usuario actual
   getCurrentUser: async () => {
     const token = localStorage.getItem('authToken');
-    
+
     if (!token) {
-      throw new Error('No hay sesión activa');
+      throw new Error('No hay token de autenticación');
     }
-    
+
     const response = await fetch(`${API_BASE_URL}/auth/user`, {
       headers: {
-        'Authorization': `Token ${token}`
-      }
+        'Authorization': `Token ${token}`,
+      },
     });
-    
-    if (!response.ok) {
-      throw new Error('Error al obtener datos del usuario');
-    }
-    
+
     const data = await response.json();
-    return data.data;
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al obtener usuario');
+    }
+
+    // Actualizar usuario en localStorage
+    if (data.success && data.data) {
+      localStorage.setItem('user', JSON.stringify(data.data));
+    }
+
+    return data;
   },
 
-  // Verificar si el usuario está autenticado
+  // 🔹 Verificar si está autenticado
   isAuthenticated: () => {
     return !!localStorage.getItem('authToken');
   },
 
-  // Obtener el usuario guardado
+  // 🔹 Obtener usuario guardado
   getStoredUser: () => {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   },
 
-  // Verificar si el usuario es admin/staff
+  // 🔹 Verificar si es admin según los flags que devuelve el backend
   isAdmin: () => {
     const user = authAPI.getStoredUser();
     return user && (user.is_staff || user.is_superuser);
-  }
+  },
 };
+
+export default authAPI;
